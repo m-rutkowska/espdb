@@ -45,11 +45,11 @@ public class Import {
 	public static void main(String[] args) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		// temporary delete database
-		File fdb = new File("res/espdb.db");
+		File fdb = new File("db/espdb.db");
 		if (fdb.exists())
 			fdb.delete();
 
-		db = new DataBase("jdbc:sqlite:res/espdb.db");
+		db = new DataBase("jdbc:sqlite:db/espdb.db");
 		db.query("CREATE TABLE IF NOT EXISTS word_es ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
 		db.query("CREATE TABLE IF NOT EXISTS word_en ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
 		db.query("CREATE TABLE IF NOT EXISTS word_pl ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
@@ -59,7 +59,7 @@ public class Import {
 		 * tab(split after coma)create SQL request (insert into table "name" ()
 		 * values....)
 		 */
-		FileReader fr = new FileReader("esp-verbs.csv");
+		FileReader fr = new FileReader("res/esp-verbs.csv");
 		BufferedReader br = new BufferedReader(fr);
 		String ln;
 		while ((ln = br.readLine()) != null) {
