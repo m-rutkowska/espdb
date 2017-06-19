@@ -1,7 +1,7 @@
 package espdb;
 
 import java.io.BufferedReader;
-import java.io.File;
+//import java.io.File;
 import java.io.FileReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -71,9 +71,8 @@ public class Import {
 	public static void main(String[] args) throws Exception {
 		Class.forName("org.sqlite.JDBC");
 		// temporary delete database
-		File fdb = new File("db/espdb.db");
-		if (fdb.exists())
-			fdb.delete();
+		//File fdb = new File("db/espdb.db");
+		//if (fdb.exists())fdb.delete();
 
 		db = new DataBase("jdbc:sqlite:db/espdb.db");
 		db.query("CREATE TABLE IF NOT EXISTS word_es ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
