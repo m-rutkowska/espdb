@@ -20,6 +20,7 @@ import espdb.DataBase.Result;
 public class JsoupImport {
 
 	static DataBase db;
+	static DataBase glosbe;
 
 	public static int getId(String word, String lang) throws SQLException {
 		int id = -1;
@@ -68,24 +69,32 @@ public class JsoupImport {
 				if (checkRel(id_A.get(i), id_B.get(j), lang)) continue;
 				
 				//insert into tab (id_es,id_pl) VALUES('v1','v2');
-				String q = "INSERT INTO rel_es_" + lang + " (id_es, id_" + lang + ") VALUES ('"
-						+ id_A.get(i) + "','" + id_B.get(j) + "'); ";
+				String q = "INSERT INTO rel_es_" + lang + " (id_es, id_" + lang + ", prio) VALUES (?, ?, ?)";
 				//System.out.println("q="+q);
-				db.query(q);
+				db.query(q, id_A.get(i), id_B.get(j), j+1);
 			}
 		}
 	}
 
 	public static String[] getTranslation(String esp, String targetLang) throws Exception{
-		Connection connect = Jsoup.connect("https://glosbe.com/es/"+targetLang+"/"+esp);
-		Response resp = connect.execute();
-		Document doc = resp.parse();
+		Document doc;
+		Result dbr = glosbe.query("SELECT resp FROM glosbe WHERE esp=? AND targetLang=?", esp, targetLang);
+		ResultSet rs = dbr.getResultSet();
+		if (rs.next()) {
+			doc = Jsoup.parse(rs.getString("resp"));
+		}
+		else {
+			Connection connect = Jsoup.connect("https://glosbe.com/es/"+targetLang+"/"+esp);
+			Response resp = connect.execute();
+			doc = resp.parse();			
+			glosbe.query("INSERT INTO glosbe (esp, targetLang, resp) VALUES (?,?,?);", esp, targetLang, doc.html());
+		}
 		Elements els = doc.getElementsByClass("phr");
 		String[] r = new String[els.size()];
 		for(int i = 0; i <els.size(); i++){
 			r[i] = els.get(i).text();
 		}
-		return r;	
+		return r;
 	}
 	
 	public static void main(String[] args) throws Exception {
@@ -96,11 +105,13 @@ public class JsoupImport {
 		//if (fdb.exists())fdb.delete();
 
 		db = new DataBase("jdbc:sqlite:db/espdb.db");
+		glosbe = new DataBase("jdbc:sqlite:db/glosbe.db");
+		glosbe.query("CREATE TABLE IF NOT EXISTS glosbe ( esp VARCHAR(255), targetLang CHAR(2), resp TEXT);");
 		db.query("CREATE TABLE IF NOT EXISTS word_es ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
 		db.query("CREATE TABLE IF NOT EXISTS word_en ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
 		db.query("CREATE TABLE IF NOT EXISTS word_pl ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
-		db.query("CREATE TABLE IF NOT EXISTS rel_es_pl ( id_es INTEGER, id_pl INTEGER, UNIQUE(id_es, id_pl));");
-		db.query("CREATE TABLE IF NOT EXISTS rel_es_en ( id_es INTEGER, id_en INTEGER, UNIQUE(id_es, id_en));");
+		db.query("CREATE TABLE IF NOT EXISTS rel_es_pl ( id_es INTEGER, id_pl INTEGER, prio INTEGER, UNIQUE(id_es, id_pl));");
+		db.query("CREATE TABLE IF NOT EXISTS rel_es_en ( id_es INTEGER, id_en INTEGER, prio INTEGER, UNIQUE(id_es, id_en));");
 		List<String> noExists = new ArrayList<String>();
 		
 		FileReader fr = new FileReader("res/esp-verbs.csv");
@@ -121,10 +132,10 @@ public class JsoupImport {
 				System.out.println("** Have " + words_es[0]);
 				continue;
 			}
-			if (trcnt++==50) {
-				
+			if (trcnt++==10) {
 				break;
 			}
+			Thread.sleep(1000);
 			System.out.println("** Translating '" + words_es[0]+"'");
 			try{
 			words_en = getTranslation(words_es[0], "en");
