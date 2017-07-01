@@ -17,7 +17,7 @@ import org.jsoup.select.Elements;
 
 import espdb.DataBase.Result;
 
-public class JsoupTest {
+public class JsoupImport {
 
 	static DataBase db;
 
@@ -32,6 +32,7 @@ public class JsoupTest {
 			System.out.println("id("+word+") = "+id);
 		return id;
 	}
+	
 	
 	public static List<Integer> addWords(String[] words, String lang)
 			throws SQLException {
