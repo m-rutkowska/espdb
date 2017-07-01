@@ -16,8 +16,7 @@ public class Import {
 
 	public static int getId(String word, String lang) throws SQLException {
 		int id = -1;
-		Result r = db.query("SELECT id FROM word_" + lang + " WHERE word='"
-				+ word + "'");
+		Result r = db.query("SELECT id FROM word_" + lang + " WHERE word=?",word);
 		ResultSet rs = r.getResultSet();
 		if (rs.next()) {
 			id = rs.getInt("id");
@@ -33,8 +32,7 @@ public class Import {
 			int id = getId(s, lang);
 			if (id == -1) {
 				try {
-					db.query("INSERT INTO word_" + lang + " (word) VALUES ('"
-							+ s + "')");
+					db.query("INSERT INTO word_" + lang + " (word) VALUES (?)",s);
 					id = getId(s, lang);
 				} catch (Exception e) {
 					System.out.println("Failed to insert " + s);
@@ -47,7 +45,7 @@ public class Import {
 
 	public static boolean checkRel(int a, int b, String lang) throws SQLException {
 		String tabname = "rel_es_"+lang;
-		Result r = db.query("SELECT 1 FROM " + tabname + " WHERE id_es='"+a+"' and id_"+lang+"='"+b+"'");
+		Result r = db.query("SELECT 1 FROM " + tabname + " WHERE id_es=? and id_"+lang+"=?",a,b);
 		ResultSet rs = r.getResultSet();
 		return rs.next();
 	}
@@ -60,10 +58,9 @@ public class Import {
 				if (checkRel(id_A.get(i), id_B.get(j), lang)) continue;
 				
 				//insert into tab (id_es,id_pl) VALUES('v1','v2');
-				String q = "INSERT INTO rel_es_" + lang + " (id_es, id_" + lang + ") VALUES ('"
-						+ id_A.get(i) + "','" + id_B.get(j) + "'); ";
+				String q = "INSERT INTO rel_es_" + lang + " (id_es, id_" + lang + ", prio) VALUES (?,?,?); ";
 				System.out.println("q="+q);
-				db.query(q);
+				db.query(q,id_A.get(i),id_B.get(j),j);
 			}
 		}
 	}
@@ -78,8 +75,8 @@ public class Import {
 		db.query("CREATE TABLE IF NOT EXISTS word_es ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
 		db.query("CREATE TABLE IF NOT EXISTS word_en ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
 		db.query("CREATE TABLE IF NOT EXISTS word_pl ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
-		db.query("CREATE TABLE IF NOT EXISTS rel_es_pl ( id_es INTEGER, id_pl INTEGER, UNIQUE(id_es, id_pl));");
-		db.query("CREATE TABLE IF NOT EXISTS rel_es_en ( id_es INTEGER, id_en INTEGER, UNIQUE(id_es, id_en));");
+		db.query("CREATE TABLE IF NOT EXISTS rel_es_pl ( id_es INTEGER, id_pl INTEGER, prio INTEGER, UNIQUE(id_es, id_pl));");
+		db.query("CREATE TABLE IF NOT EXISTS rel_es_en ( id_es INTEGER, id_en INTEGER, prio INTEGER, UNIQUE(id_es, id_en));");
 
 		/*
 		 * Open txt file Read line by line for each line parse split after

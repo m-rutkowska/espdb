@@ -2,7 +2,7 @@ package espdb;
 
 
 import java.io.BufferedReader;
-import java.io.File;
+//import java.io.File;
 import java.io.FileReader;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -100,11 +100,12 @@ public class JsoupTest {
 		db.query("CREATE TABLE IF NOT EXISTS word_pl ( id INTEGER PRIMARY KEY, word VARCHAR(255), UNIQUE (word));");
 		db.query("CREATE TABLE IF NOT EXISTS rel_es_pl ( id_es INTEGER, id_pl INTEGER, UNIQUE(id_es, id_pl));");
 		db.query("CREATE TABLE IF NOT EXISTS rel_es_en ( id_es INTEGER, id_en INTEGER, UNIQUE(id_es, id_en));");
-		
+		List<String> noExists = new ArrayList<String>();
 		
 		FileReader fr = new FileReader("res/esp-verbs.csv");
 		BufferedReader br = new BufferedReader(fr);
 		String ln;
+		int trcnt=0;
 		while ((ln = br.readLine()) != null) {
 			String[] cols = ln.split(";");
 			if (cols.length < 1)
@@ -119,9 +120,24 @@ public class JsoupTest {
 				System.out.println("** Have " + words_es[0]);
 				continue;
 			}
+			if (trcnt++==50) {
+				
+				break;
+			}
 			System.out.println("** Translating '" + words_es[0]+"'");
+			try{
 			words_en = getTranslation(words_es[0], "en");
 			words_pl = getTranslation(words_es[0], "pl");
+			}catch(org.jsoup.HttpStatusException e){
+				//addWords(words_es, "es");
+				if (e.getStatusCode()==404) {
+					noExists.add(words_es[0]);
+					continue;
+				}else{
+					br.close();
+					throw e;
+				}
+			}
 		
 			List<Integer> id_es = addWords(words_es, "es");
 			List<Integer> id_en = addWords(words_en, "en");
@@ -130,6 +146,9 @@ public class JsoupTest {
 			createRel(id_es, id_pl, pl);
 			String en = "en";
 			createRel(id_es, id_en, en);
+		}
+		for(int i =0; i <noExists.size(); i++){
+			System.out.println("Anknown: "+noExists.get(i));
 		}
 		br.close();
 	}
